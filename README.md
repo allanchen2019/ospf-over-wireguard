@@ -6,9 +6,9 @@ DNS部分在旁路linux上部署[mosdns-cn](https://github.com/allanchen2019/mos
 
 #### 环境概述：
 
-vps和本地Mikrotik设备之间通过wireguard隧道连接，具体配置方法不再赘述，这里仅对和本文相关的配置做必要说明。
+本地Mikrotik设备负责拨号，与vps之间通过wireguard隧道连接，具体配置方法不再赘述，这里仅对和本文相关的配置做必要说明。
 
-vps wg0 address：`10.0.1.1`
+假设vps wg0 address：`10.0.1.1`
 
 routeros wgdc1 address：`10.0.1.2`
 
@@ -29,4 +29,4 @@ cd nchnroutes
 ```
 make
 cp routes4.conf /etc/bird/routes4.conf
-``
+```
