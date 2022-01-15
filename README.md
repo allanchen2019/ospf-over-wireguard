@@ -2,7 +2,7 @@
 
 本文记录借鉴 [使用 RouterOS，OSPF 和树莓派为国内外 IP 智能分流](https://idndx.com/use-routeros-ospf-and-raspberry-pi-to-create-split-routing-for-different-ip-ranges/)文章做分流,并改为直接通过隧道从vps接收路由,旁路Linux仅作为DNS分流器，详见[mosdns-cn](https://github.com/allanchen2019/mosdns-cn-debian-install)。
 
-#### 环境概述：
+## 环境概述：
 
 本地Mikrotik设备（hapac2 v7.2rc1）负责拨号，vps Debian 11 Linux，之间通过wireguard隧道连接，具体配置方法不再赘述，这里仅对和本文相关的配置做必要说明。
 
@@ -17,7 +17,7 @@ wg配置中如有Post Up & Down和DNS条目先注释掉，在`[Interface]`最后
 
 修改完毕后`g-quick down wg0 && wg-quick up wg0`重启接口。
 
-#### 1.vps配置
+## 1.vps配置
 
 首先安装bird2:
 
@@ -124,7 +124,7 @@ static1    Static     master4    up     2022-01-06
 ```
 说明静态路由条目已经注入BIRD。
 
-#### 2.本地RouterOS配置
+## 2.本地RouterOS配置
 
 假设ros wireguard连接vps接口名称`wgdc1`接口地址`10.0.1.2/24`
 
@@ -179,4 +179,4 @@ ospf1      OSPF       master4    up     2022-01-06    Running
 
 `/routing rule add action=lookup comment=science disabled=no src-address=192.168.2.0/24 table=ospf`
 
-终于写完了，喝杯咖啡压压惊
+终于写完了，喝杯咖啡压压惊:upside_down_face:
