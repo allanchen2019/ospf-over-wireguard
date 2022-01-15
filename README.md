@@ -41,13 +41,9 @@ touch bird.conf
 编辑/etc/bird.conf内容如下
 ```
 log syslog all;
-
 router id 10.0.1.1;
-
 protocol device {
 }
-
-
 
 protocol static {
         ipv4;
@@ -59,7 +55,6 @@ protocol ospf v2 {
                 export all;
         };
         area 0.0.0.0 {
-
                 interface "wg0" {
                         type ptp;
                         hello 5;
@@ -67,7 +62,6 @@ protocol ospf v2 {
                 };
         };
 }
-
 ```
 这里的router id要根据vps实际wg接口地址填写，其他保持默认即可。
 
@@ -103,6 +97,33 @@ COMMIT
 ```
 保存退出，执行`iptables-restore < /etc/iptables/rules.v4`让配置生效。
 
+启动BIRD：
+
+`birdc c`
+
+检查BIRD状态：
+
+`birdc s p a`
+
+可以在static1协议下看到如下消息：
+
+```
+static1    Static     master4    up     2022-01-06
+  Channel ipv4
+    State:          UP
+    Table:          master4
+    Preference:     200
+    Input filter:   ACCEPT
+    Output filter:  REJECT
+    Routes:         12888 imported, 0 exported, 12888 preferred
+    Route change stats:     received   rejected   filtered    ignored   accepted
+      Import updates:          12893          0          0          0      12893
+      Import withdraws:            5          0        ---          0          5
+      Export updates:              0          0          0        ---          0
+      Export withdraws:            0        ---        ---        ---          0
+```
+说明静态路由条目已经注入BIRD。
+
 #### 2.本地RouterOS配置
 
 假设ros wireguard连接vps接口名称`wgdc1`接口地址`10.0.1.2/24`
@@ -120,3 +141,42 @@ Change MSS：
 /routing ospf interface-template add area=ospf-area-dc1 hello-interval=5s interfaces=wgdc1 networks=10.0.1.0/24 type=ptp
 ```
 
+运气好的话`/routing ospf neighbor pr`就可以看到邻居状态，过几十秒状态应该为full
+
+` 0  D instance=dc1 area=ospf-area-dc1 address=10.0.1.1 router-id=10.0.1.1 state="Full" state-changes=5 adjacency=6h11m6s timeout=37s`
+
+`/ip route pr`可以看到vps端发来的路由：
+
+```
+ #       DST-ADDRESS        GATEWAY            DISTANCE
+...
+   DAo   1.0.0.0/24         10.0.1.1%wgdc1          110
+   DAo   1.0.4.0/22         10.0.1.1%wgdc1          110
+   DAo   1.0.16.0/20        10.0.1.1%wgdc1          110
+   DAo   1.0.64.0/18        10.0.1.1%wgdc1          110
+   DAo   1.0.128.0/17       10.0.1.1%wgdc1          110
+   DAo   1.1.1.0/24         10.0.1.1%wgdc1          110
+...
+```
+同时vps端执行`birdc s p a`也能看到ospf1协议已经UP状态：
+```
+ospf1      OSPF       master4    up     2022-01-06    Running
+  Channel ipv4
+    State:          UP
+    Table:          master4
+    Preference:     150
+    Input filter:   ACCEPT
+    Output filter:  ACCEPT
+    Routes:         1 imported, 12888 exported, 1 preferred
+    Route change stats:     received   rejected   filtered    ignored   accepted
+      Import updates:              2          0          0          0          2
+      Import withdraws:            1          0        ---          0          1
+      Export updates:          12895          2          0        ---      12893
+      Export withdraws:            6        ---        ---        ---          5
+```
+
+最后在Routing Rule里加入要分流的内网ip（段），比如`192.168.2.0/24`的所有设备都执行分流：
+
+`/routing rule add action=lookup comment=science disabled=no src-address=192.168.2.0/24 table=ospf`
+
+终于写完了，喝杯咖啡压压惊
