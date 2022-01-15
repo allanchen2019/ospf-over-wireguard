@@ -30,3 +30,12 @@ cd nchnroutes
 make
 cp routes4.conf /etc/bird/routes4.conf
 ```
+编辑/etc/bird.conf:
+```
+log syslog all;
+
+router id 10.0.1.1;
+
+protocol device {
+}
+```
