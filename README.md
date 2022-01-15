@@ -8,6 +8,7 @@ DNS部分在旁路linux上部署[mosdns-cn](https://github.com/allanchen2019/mos
 
 vps和本地Mikrotik设备之间通过wireguard隧道连接，具体配置方法不再赘述，这里仅对和本文相关的配置做必要说明。
 vps wg0 address：10.0.1.1
+
 routeros wgdc1 address：10.0.1.2
 
 #### 1.vps配置
@@ -16,9 +17,15 @@ routeros wgdc1 address：10.0.1.2
 
 `apt update && apt install bird2`
 
-生成!cn静态路由表：
-
+拉取生成!cn静态路由表的库：
 ```
 git clone https://github.com/dndx/nchnroutes.git
 cd nchnroutes
 ```
+编辑Makefile文件，假设vps网卡接口是eth0，公网ip是1.2.3.4，在`python3 produce.py`后加入` --next eth0 --exclude 1.2.3.4/32`，保存退出。
+
+生成路由表并复制到bird配置目录：
+```
+make
+cp routes4.conf /etc/bird/routes4.conf
+``
