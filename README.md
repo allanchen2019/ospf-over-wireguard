@@ -134,6 +134,14 @@ Change MSS：
 /ip firewall mangle add action=change-mss chain=output new-mss=clamp-to-pmtu passthrough=yes protocol=tcp tcp-flags=syn
 /ip firewall mangle add action=change-mss chain=postrouting new-mss=clamp-to-pmtu passthrough=yes protocol=tcp tcp-flags=syn
 ```
+NAT：
+
+`/ip firewall nat add action=src-nat chain=srcnat out-interface=wgdc1 to-addresses=10.0.1.2`
+
+创建路由表：
+
+`/routing table add disabled=no fib name=ospf`
+
 创建OSPF实例：
 ```
 /routing ospf instance add name=dc1 router-id=10.0.1.2 routing-table=ospf
