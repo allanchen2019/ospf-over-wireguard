@@ -6,13 +6,16 @@
 
 本地Mikrotik设备（hapac2 v7.2rc1）负责拨号，vps Debian 11 Linux，之间通过wireguard隧道连接，具体配置方法不再赘述，这里仅对和本文相关的配置做必要说明。
 
+假设vps wg0 address：`10.0.1.1/24`
+
+本地routeros wgdc1 address：`10.0.1.2/24`
+
 wg配置中如有Post Up & Down和DNS条目先注释掉，在`[Interface]`最后加入 `Table = off`因为我们不需要vps插入wg路由。
+在`[Peer]`中负责连接本地ros的AllowedIPs修改为如下形式：
+
+`AllowedIPs = 10.0.1.2/32,224.0.0.5/32`
 
 修改完毕后`g-quick down wg0 && wg-quick up wg0`重启接口。
-
-假设vps wg0 address：`10.0.1.1`
-
-本地routeros wgdc1 address：`10.0.1.2`
 
 #### 1.vps配置
 
@@ -76,7 +79,7 @@ protocol ospf v2 {
 
 修改iptables：
 
-安装防火墙规则持久化包：`apt install iptables-persistent`问是否保存当前规则都选No。
+安装防火墙规则持久化包：`apt install iptables-persistent`，过程中询问是否保存当前规则都选No。
 
 编辑/etc/iptables/rules.v4写入如下内容：
 
@@ -100,7 +103,20 @@ COMMIT
 ```
 保存退出，执行`iptables-restore < /etc/iptables/rules.v4`让配置生效。
 
-# 2.本地RouterOS配置
+#### 2.本地RouterOS配置
 
-首先确保
+假设ros wireguard连接vps接口名称`wgdc1`接口地址`10.0.1.2/24`
+
+Change MSS：
+```
+/ip firewall mangle add action=change-mss chain=forward new-mss=clamp-to-pmtu passthrough=yes protocol=tcp tcp-flags=syn
+/ip firewall mangle add action=change-mss chain=output new-mss=clamp-to-pmtu passthrough=yes protocol=tcp tcp-flags=syn
+/ip firewall mangle add action=change-mss chain=postrouting new-mss=clamp-to-pmtu passthrough=yes protocol=tcp tcp-flags=syn
+```
+创建OSPF实例：
+```
+/routing ospf instance add name=dc1 router-id=10.0.1.2 routing-table=ospf
+/routing ospf area add instance=dc1 name=ospf-area-dc1
+/routing ospf interface-template add area=ospf-area-dc1 hello-interval=5s interfaces=wgdc1 networks=10.0.1.0/24 type=ptp
+```
 
