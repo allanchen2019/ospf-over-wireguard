@@ -15,7 +15,7 @@ wg配置中如有Post Up & Down和DNS条目先注释掉，在`[Interface]`最后
 
 `AllowedIPs = 0.0.0.0/0`
 
-修改完毕后`g-quick down wg-ospf && wg-quick up wg-ospf`重启接口。
+修改完毕后`wg-quick down wg-ospf && wg-quick up wg-ospf`重启接口。
 
 ## 1.vps配置
 
