@@ -1,6 +1,8 @@
 # ospf-over-wireguard
 
-本文记录借鉴 [使用 RouterOS，OSPF 和树莓派为国内外 IP 智能分流](https://idndx.com/use-routeros-ospf-and-raspberry-pi-to-create-split-routing-for-different-ip-ranges/)文章做分流,并改为直接通过隧道从vps接收路由,旁路Linux仅作为DNS分流器，详见[mosdns-cn](https://github.com/allanchen2019/mosdns-cn-debian-install)。
+本文记录借鉴 [使用 RouterOS，OSPF 和树莓派为国内外 IP 智能分流](https://idndx.com/use-routeros-ospf-and-raspberry-pi-to-create-split-routing-for-different-ip-ranges/)改为直接通过隧道从vps接收路由,
+
+旁路Linux作为DNS分流器，完成本文IP分流后部署，详见[mosdns-cn](https://github.com/allanchen2019/mosdns-cn-debian-install)。
 
 ## 环境概述：
 
