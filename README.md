@@ -4,18 +4,18 @@
 
 ## 环境概述：
 
-本地Mikrotik设备（hapac2 v7.2rc1）负责拨号，vps Debian 11 Linux，之间通过wireguard隧道连接，具体配置方法不再赘述，这里仅对和本文相关的配置做必要说明。
+本地Mikrotik设备（hapac2 v7.2rc3）负责拨号，vps Debian 11 Linux，之间通过wireguard隧道连接，具体配置方法不再赘述，这里仅对和本文相关的配置做必要说明。
 
-假设vps wg0 address：`10.0.1.1/24`
+假设vps wg-ospf address：`10.0.1.0/31`
 
-本地routeros wgdc1 address：`10.0.1.2/24`
+本地routeros wgdc1 address：`10.0.1.1/31`
 
 wg配置中如有Post Up & Down和DNS条目先注释掉，在`[Interface]`最后加入 `Table = off`因为我们不需要vps插入wg路由。
 在`[Peer]`中负责连接本地ros的AllowedIPs修改为如下形式：
 
-`AllowedIPs = 10.0.1.2/32,224.0.0.0/24`
+`AllowedIPs = 0.0.0.0/0`
 
-修改完毕后`g-quick down wg0 && wg-quick up wg0`重启接口。
+修改完毕后`g-quick down wg-ospf && wg-quick up wg-ospf`重启接口。
 
 ## 1.vps配置
 
