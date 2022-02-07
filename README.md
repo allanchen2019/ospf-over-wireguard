@@ -191,4 +191,9 @@ ospf1      OSPF       master4    up     2022-01-06    Running
 
 `/routing rule add action=lookup comment=science disabled=no src-address=192.168.2.0/24 table=ospf`
 
+## 分流验证：
+本地内网机器分别`tracert -d 1.1.1.1`和`223.5.5.5`（其他平台自行更换traceroute或mtr命令）
+看第二条路由，1.1.1.1应为10.0.1.0说明过隧道，223.5.5.5不是说明走默认网关。
+
+
 终于写完了，喝杯咖啡压压惊:upside_down_face:
