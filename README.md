@@ -41,8 +41,9 @@ touch bird.conf
 编辑/etc/bird.conf内容如下
 ```
 log syslog all;
-router id 10.0.1.1;
+router id 10.0.1.0;
 protocol device {
+        scan time 60;
 }
 
 protocol static {
@@ -53,11 +54,12 @@ protocol static {
 protocol ospf v2 {
         ipv4 {
                 export all;
+                import none;
         };
         area 0.0.0.0 {
-                interface "wg0" {
+                interface "wg*" {
                         type ptp;
-                        hello 5;
+                        hello 10;
                         dead 40;
                 };
         };
