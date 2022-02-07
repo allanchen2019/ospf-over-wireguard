@@ -14,7 +14,7 @@
 本地routeros wgdc1 address：`10.0.1.1/31`
 
 wg配置中如有Post Up & Down和DNS条目先注释掉，在`[Interface]`最后加入 `Table = off`因为我们不需要vps插入wg路由。
-在`[Peer]`中负责连接本地ros的AllowedIPs修改为如下形式：
+在`[Peer]`中AllowedIPs修改为如下形式：
 
 `AllowedIPs = 0.0.0.0/0`
 
