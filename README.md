@@ -86,7 +86,7 @@ protocol ospf v2 {
 :OUTPUT ACCEPT [0:0]
 -A FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
 -A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
--A FORWARD -i eth0 -o wg0 -j ACCEPT
+-A FORWARD -i eth0 -o wg-ospf -j ACCEPT
 COMMIT
 
 *nat
@@ -94,7 +94,7 @@ COMMIT
 :INPUT ACCEPT [0:0]
 :POSTROUTING ACCEPT [0:0]
 :OUTPUT ACCEPT [0:0]
--A POSTROUTING -o wg0 -j MASQUERADE
+-A POSTROUTING -o wg-ospf -j MASQUERADE
 COMMIT
 ```
 保存退出，执行`iptables-restore < /etc/iptables/rules.v4`让配置生效。
@@ -128,7 +128,7 @@ static1    Static     master4    up     2022-01-06
 
 ## 2.本地RouterOS配置
 
-假设ros wireguard连接vps接口名称`wgdc1`接口地址`10.0.1.2/24`
+假设ros wireguard连接vps接口名称`wgdc1`接口地址`10.0.1.1/31`
 
 Change MSS：
 ```
@@ -137,7 +137,7 @@ Change MSS：
 ```
 NAT：
 
-`/ip firewall nat add action=src-nat chain=srcnat out-interface=wgdc1 to-addresses=10.0.1.2`
+`/ip firewall nat add action=src-nat chain=srcnat out-interface=wgdc1 to-addresses=10.0.1.1`
 
 创建路由表：
 
@@ -145,9 +145,9 @@ NAT：
 
 创建OSPF实例：
 ```
-/routing ospf instance add name=dc1 router-id=10.0.1.2 routing-table=ospf
+/routing ospf instance add name=dc1 router-id=10.0.1.1 routing-table=ospf
 /routing ospf area add instance=dc1 name=ospf-area-dc1
-/routing ospf interface-template add area=ospf-area-dc1 hello-interval=5s interfaces=wgdc1 networks=10.0.1.0/24 type=ptp
+/routing ospf interface-template add area=ospf-area-dc1 hello-interval=10s interfaces=wgdc1 networks=10.0.1.0/31 type=ptp
 ```
 
 运气好的话`/routing ospf neighbor pr`就可以看到邻居状态，过几十秒状态应该为full
