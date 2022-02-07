@@ -6,7 +6,8 @@
 
 ## 环境概述：
 
-本地Mikrotik设备（hapac2 v7.2rc3）负责拨号，vps Debian 11 Linux，之间通过wireguard隧道连接，具体配置方法不再赘述，这里仅对和本文相关的配置做必要说明。
+本地Mikrotik设备（hapac2 v7.2rc3）负责拨号，远程vps Debian 11 Linux，之间通过wireguard隧道连接，具体配置方法不再赘述，这里仅对和本文相关的配置做必要说明。
+本地ROS如果为CHR并且不负责拨号，请自行完成dst 0.0.0.0/0的网关设置。
 
 假设vps wg-ospf address：`10.0.1.0/31`
 
