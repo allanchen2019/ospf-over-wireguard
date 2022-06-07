@@ -25,7 +25,7 @@ wg配置中如有Post Up & Down和DNS条目先注释掉，在`[Interface]`最后
 
 `AllowedIPs = 0.0.0.0/0`
 
-修改完毕wg0.conf如下所示，多余去掉：
+修改完毕wg0.conf如下所示，应该只有这些行，其他行全部删除：
 
 ```
 [Interface]
