@@ -1,24 +1,40 @@
 # ospf-over-wireguard
 
-本文记录借鉴 [使用 RouterOS，OSPF 和树莓派为国内外 IP 智能分流](https://idndx.com/use-routeros-ospf-and-raspberry-pi-to-create-split-routing-for-different-ip-ranges/)改为直接通过隧道从vps接收路由,
+本文记录借鉴 [使用 RouterOS，OSPF 和树莓派为国内外 IP 智能分流](https://idndx.com/use-routeros0-and-raspberry-pi-to-create-split-routing-for-different-ip-ranges/)改为直接通过隧道从vps接收路由,
 
 旁路Linux作为DNS分流器，完成本文IP分流后部署，详见[mosdns-cn](https://github.com/allanchen2019/mosdns-cn-debian-install)。
 
 ## 环境概述：
 
-本地Mikrotik设备（hapac2 v7.2rc3）负责拨号，远程vps Debian 11 Linux，之间通过wireguard隧道连接，具体配置方法不再赘述，这里仅对和本文相关的配置做必要说明。
+本地Mikrotik设备（hapac2 v7.3）负责拨号，远程vps Debian 11 Linux，之间通过wireguard隧道连接，具体配置方法不再赘述，这里仅对和本文相关的配置做必要说明。
 本地ROS如果为CHR并且不负责拨号，请自行完成dst 0.0.0.0/0的网关设置。
 
-假设vps wg-ospf 接口address：`10.0.1.0/31`
+假设vps wg0 接口address：`10.0.1.0/31`
 
-本地routeros wgdc1 接口address：`10.0.1.1/31`
+网卡名eth0
+
+本地routeros wg-dc1 接口address：`10.0.1.1/31`
 
 wg配置中如有Post Up & Down和DNS条目先注释掉，在`[Interface]`最后加入 `Table = off`因为我们不需要vps插入wg路由。
 在`[Peer]`中AllowedIPs修改为如下形式：
 
 `AllowedIPs = 0.0.0.0/0`
 
-修改完毕后`wg-quick down wg-ospf && wg-quick up wg-ospf`重启接口。
+修改完毕wg0.conf如下所示，多余去掉：
+
+```
+[Interface]
+PrivateKey = ***=
+Address = 10.0.1.0/31
+ListenPort = 65535
+Table = off
+
+[Peer]
+PublicKey = ***=
+AllowedIPs = 0.0.0.0/0
+```
+
+执行`wg-quick down wg0 && wg-quick up wg0`重启接口。
 
 ## 1.vps配置
 
@@ -31,7 +47,7 @@ wg配置中如有Post Up & Down和DNS条目先注释掉，在`[Interface]`最后
 git clone https://github.com/dndx/nchnroutes.git
 cd nchnroutes
 ```
-编辑Makefile文件，假设vps网卡接口是eth0，公网ip是1.2.3.4，在`python3 produce.py`后加入` --next eth0 --exclude 1.2.3.4/32`，保存退出。
+编辑Makefile文件，假设公网ip是1.2.3.4，在`python3 produce.py`后加入` --next eth0 --exclude 1.2.3.4/32`，保存退出。
 
 生成路由表并复制到bird配置目录：
 ```
@@ -44,9 +60,9 @@ touch bird.conf
 编辑/etc/bird.conf内容如下
 ```
 log syslog all;
+debug protocols all;
 router id 10.0.1.0;
 protocol device {
-        scan time 60;
 }
 
 protocol static {
@@ -68,38 +84,51 @@ protocol ospf v2 {
         };
 }
 ```
-这里的router id要根据vps实际wg接口地址填写，其他保持默认即可。
 
-开启ip转发：
+开启ip转发,修改`/etc/sysctl.conf`,添加或修改为:
 
-`sed -i.bak 's/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf && sysctl -p |grep forward`
+`net.ipv4.ip_forward = 1`
 
-返回`net.ipv4.ip_forward = 1`即为执行成功。
+执行`sysctl -p`生效。
 
 修改iptables：
 
-安装防火墙规则持久化包：`apt install iptables-persistent`，过程中询问是否保存当前规则都选No。
+安装防火墙规则持久化包：
 
-编辑/etc/iptables/rules.v4写入如下内容：
+`apt install iptables-persistent`
+
+过程中询问是否保存当前规则都选No。
+
+
+编辑`/etc/iptables/rules.v4`写入如下内容，
 
 ```
-*filter
-:INPUT ACCEPT [0:0]
-:FORWARD DROP [0:0]
-:OUTPUT ACCEPT [0:0]
--A FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
--A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
--A FORWARD -i eth0 -o wg-ospf -j ACCEPT
-COMMIT
-
 *nat
-:PREROUTING ACCEPT [0:0]
-:INPUT ACCEPT [0:0]
-:POSTROUTING ACCEPT [0:0]
-:OUTPUT ACCEPT [0:0]
--A POSTROUTING -o wg-ospf -j MASQUERADE
+:PREROUTING ACCEPT
+:INPUT ACCEPT
+:OUTPUT ACCEPT
+:POSTROUTING ACCEPT
+-A POSTROUTING -o eth0 -j MASQUERADE
+COMMIT
+
+*filter
+:INPUT ACCEPT
+:FORWARD ACCEPT
+:OUTPUT ACCEPT
+-A FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+COMMIT
+
+*mangle
+:PREROUTING ACCEPT
+:INPUT ACCEPT
+:FORWARD ACCEPT
+:OUTPUT ACCEPT
+:POSTROUTING ACCEPT
+-A FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
 COMMIT
 ```
+其中`-A POSTROUTING -o eth0 -j MASQUERADE`中的eth0按vps实际情况替换，
+
 保存退出，执行`iptables-restore < /etc/iptables/rules.v4`让配置生效。
 
 启动BIRD：
@@ -131,26 +160,21 @@ static1    Static     master4    up     2022-01-06
 
 ## 2.本地RouterOS配置
 
-假设ros wireguard连接vps接口名称`wgdc1`接口地址`10.0.1.1/31`
+假设ros wireguard连接vps接口名称`wg-dc1`接口地址`10.0.1.1/31`
 
 Change MSS：
 ```
 /ip firewall mangle add action=change-mss chain=forward new-mss=clamp-to-pmtu passthrough=yes protocol=tcp tcp-flags=syn
-/ip firewall mangle add action=change-mss chain=output new-mss=clamp-to-pmtu passthrough=yes protocol=tcp tcp-flags=syn
 ```
 NAT：
 
-`/ip firewall nat add action=src-nat chain=srcnat out-interface=wgdc1 to-addresses=10.0.1.1`
-
-创建路由表：
-
-`/routing table add disabled=no fib name=ospf`
+`/ip firewall nat add action=src-nat chain=srcnat out-interface=wg-dc1 to-addresses=10.0.1.1`
 
 创建OSPF实例：
 ```
-/routing ospf instance add name=dc1 router-id=10.0.1.1 routing-table=ospf
+/routing ospf instance add name=dc1 router-id=10.0.1.1
 /routing ospf area add instance=dc1 name=ospf-area-dc1
-/routing ospf interface-template add area=ospf-area-dc1 hello-interval=10s interfaces=wgdc1 networks=10.0.1.0/31 type=ptp
+/routing ospf interface-template add area=ospf-area-dc1 hello-interval=10s interfaces=wg-dc1 type=ptp
 ```
 
 运气好的话`/routing ospf neighbor pr`就可以看到邻居状态，过几十秒状态应该为full
@@ -162,12 +186,12 @@ NAT：
 ```
  #       DST-ADDRESS        GATEWAY            DISTANCE
 ...
-   DAo   1.0.0.0/24         10.0.1.1%wgdc1          110
-   DAo   1.0.4.0/22         10.0.1.1%wgdc1          110
-   DAo   1.0.16.0/20        10.0.1.1%wgdc1          110
-   DAo   1.0.64.0/18        10.0.1.1%wgdc1          110
-   DAo   1.0.128.0/17       10.0.1.1%wgdc1          110
-   DAo   1.1.1.0/24         10.0.1.1%wgdc1          110
+   DAo   1.0.0.0/24         10.0.1.1%wg-dc1          110
+   DAo   1.0.4.0/22         10.0.1.1%wg-dc1          110
+   DAo   1.0.16.0/20        10.0.1.1%wg-dc1          110
+   DAo   1.0.64.0/18        10.0.1.1%wg-dc1          110
+   DAo   1.0.128.0/17       10.0.1.1%wg-dc1          110
+   DAo   1.1.1.0/24         10.0.1.1%wg-dc1          110
 ...
 ```
 同时vps端执行`birdc s p a`也能看到ospf1协议已经UP状态：
@@ -187,13 +211,12 @@ ospf1      OSPF       master4    up     2022-01-06    Running
       Export withdraws:            6        ---        ---        ---          5
 ```
 
-最后在Routing Rule里加入要分流的内网ip（段），比如`192.168.2.0/24`的所有设备都执行分流：
-
-`/routing rule add action=lookup comment=science disabled=no src-address=192.168.2.0/24 table=ospf`
-
 ## 分流验证：
-本地内网机器分别`tracert -d 1.1.1.1`和`223.5.5.5`（其他平台自行更换traceroute或mtr命令）
-看第二条路由，1.1.1.1应为10.0.1.0说明过隧道，223.5.5.5不是说明走默认网关。
 
+ROS:
+
+`/tool/traceroute 1.1.1.1`第一跳为10.0.1.1
+
+`/tool/traceroute 223.5.5.5`第一跳不是10.0.1.1
 
 终于写完了，喝杯咖啡压压惊:upside_down_face:
