@@ -1,8 +1,11 @@
 # ospf-over-wireguard
 
-本文记录借鉴 [使用 RouterOS，OSPF 和树莓派为国内外 IP 智能分流](https://idndx.com/use-routeros0-and-raspberry-pi-to-create-split-routing-for-different-ip-ranges/)改为直接通过隧道从vps接收路由,
+# 重要！纯萌新小白慎入！~~现在关闭网页还来得及~~
 
-旁路Linux作为DNS分流器，完成本文IP分流后部署，详见[mosdns-cn](https://github.com/allanchen2019/mosdns-cn-debian-install)。
+
+本文记录借鉴 [使用 RouterOS，OSPF 和树莓派为国内外 IP 智能分流](https://idndx.com/use-routeros0-and-raspberry-pi-to-create-split-routing-for-different-ip-ranges/)，稍作调整，直接通过隧道从vps接收路由。
+
+关于DNS分流，详见[mosdns-cn](https://github.com/allanchen2019/mosdns-cn-debian-install)。
 
 ## 环境概述：
 
@@ -13,6 +16,8 @@
 网卡名 `eth0`，公网ip地址：`1.2.3.4`
 
 本地ROS wg接口名称`wg-dc1` ，地址：`10.0.1.1/31`
+
+## 0.配置VPS WireGuard：
 
 wg配置中如有Post Up & Down和DNS条目先注释掉，在`[Interface]`最后加入：
 
@@ -38,7 +43,7 @@ AllowedIPs = 0.0.0.0/0
 
 执行`wg-quick down wg0 && wg-quick up wg0`重启接口。
 
-## 1.vps配置
+## 1.配置VPS非cn路由表、iptables、bird
 
 首先安装bird2:
 
@@ -102,7 +107,7 @@ protocol ospf v2 {
 过程中询问是否保存当前规则都选No。
 
 
-编辑`/etc/iptables/rules.v4`写入如下内容，
+新建`/etc/iptables/rules.v4`文件，写入如下内容，
 
 ```
 *nat
@@ -160,7 +165,7 @@ static1    Static     master4    up     2022-01-06
 ```
 说明静态路由条目已经注入BIRD。
 
-## 2.本地RouterOS配置
+## 2.配置ROS
 
 打开ROS命令行依次执行下列命令：
 
@@ -213,7 +218,7 @@ ospf1      OSPF       master4    up     2022-01-06    Running
       Export withdraws:            6        ---        ---        ---          5
 ```
 
-## 分流验证：
+## 3.分流验证：
 
 ROS:
 
