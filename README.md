@@ -96,10 +96,8 @@ protocol ospf v2 {
 
 执行`sysctl -p`生效。
 
-修改iptables：
 
-安装防火墙规则持久化包：
-
+安装防火墙规则持久化包
 `apt install iptables-persistent`
 
 过程中询问是否保存当前规则都选No。
@@ -132,7 +130,7 @@ COMMIT
 -A FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
 COMMIT
 ```
-其中`-A POSTROUTING -o eth0 -j MASQUERADE`中的 `eth0` 按vps网卡名实际情况替换。
+其中`-A POSTROUTING -o eth0 -j MASQUERADE`的 `eth0` 按vps网卡名实际情况替换。
 
 保存退出，执行`iptables-restore < /etc/iptables/rules.v4`让配置生效。
 
@@ -184,7 +182,6 @@ SRCNAT：
 
 运气好的话`/routing ospf neighbor pr`就可以看到邻居状态，过几十秒状态应该为full
 
-` 0  D instance=dc1 area=ospf-area-dc1 address=10.0.1.1 router-id=10.0.1.1 state="Full" state-changes=5 adjacency=6h11m6s timeout=37s`
 
 `/ip route pr`可以看到vps端发来的路由：
 
