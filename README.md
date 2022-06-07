@@ -9,14 +9,16 @@
 本地Mikrotik设备（hapac2 v7.3）负责拨号，远程vps Debian 11 Linux，之间通过wireguard隧道连接，具体配置方法不再赘述，这里仅对和本文相关的配置做必要说明。
 本地ROS如果为CHR并且不负责拨号，请自行完成dst 0.0.0.0/0的网关设置。
 
-假设vps wg0 接口address：`10.0.1.0/31`
+假设vps wg接口名称 `wg0`，地址：`10.0.1.0/31`,
+网卡名 `eth0`，公网ip地址：`1.2.3.4`
 
-网卡名eth0
+本地ROS wg接口名称`wg-dc1` ，地址：`10.0.1.1/31`
 
-本地routeros wg-dc1 接口address：`10.0.1.1/31`
+wg配置中如有Post Up & Down和DNS条目先注释掉，在`[Interface]`最后加入：
 
-wg配置中如有Post Up & Down和DNS条目先注释掉，在`[Interface]`最后加入 `Table = off`因为我们不需要vps插入wg路由。
-在`[Peer]`中AllowedIPs修改为如下形式：
+`Table = off`
+
+`[Peer]`修改：
 
 `AllowedIPs = 0.0.0.0/0`
 
@@ -127,7 +129,7 @@ COMMIT
 -A FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
 COMMIT
 ```
-其中`-A POSTROUTING -o eth0 -j MASQUERADE`中的eth0按vps实际情况替换，
+其中`-A POSTROUTING -o eth0 -j MASQUERADE`中的 `eth0` 按vps网卡名实际情况替换。
 
 保存退出，执行`iptables-restore < /etc/iptables/rules.v4`让配置生效。
 
@@ -160,13 +162,13 @@ static1    Static     master4    up     2022-01-06
 
 ## 2.本地RouterOS配置
 
-假设ros wireguard连接vps接口名称`wg-dc1`接口地址`10.0.1.1/31`
+打开命令行依次执行下列命令：
 
 Change MSS：
 ```
 /ip firewall mangle add action=change-mss chain=forward new-mss=clamp-to-pmtu passthrough=yes protocol=tcp tcp-flags=syn
 ```
-NAT：
+SRCNAT：
 
 `/ip firewall nat add action=src-nat chain=srcnat out-interface=wg-dc1 to-addresses=10.0.1.1`
 
@@ -219,4 +221,4 @@ ROS:
 
 `/tool/traceroute 223.5.5.5`第一跳不是10.0.1.1
 
-终于写完了，喝杯咖啡压压惊:upside_down_face:
+终于改完了，~~喝杯咖啡压压惊~~  你学废了吗:upside_down_face:
