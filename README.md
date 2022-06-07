@@ -162,7 +162,7 @@ static1    Static     master4    up     2022-01-06
 
 ## 2.本地RouterOS配置
 
-打开命令行依次执行下列命令：
+打开ROS命令行依次执行下列命令：
 
 Change MSS：
 ```
