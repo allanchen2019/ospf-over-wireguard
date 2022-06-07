@@ -17,15 +17,16 @@
 
 ## 0.配置VPS WireGuard：
 
-wg配置中如有Post Up & Down和DNS条目先注释掉，在`[Interface]`最后加入：
-
+在`[Interface]`段最后加入：
 `Table = off`
 
-`[Peer]`修改：
 
+`[Peer]`段修改：
 `AllowedIPs = 0.0.0.0/0`
 
-修改完毕wg0.conf如下所示，应该只有这些行，其他行全部删除：
+修改完毕wg0.conf如下所示，应该只有这些行，
+
+其他行全部删除：
 
 ```
 [Interface]
@@ -100,10 +101,10 @@ protocol ospf v2 {
 安装防火墙规则持久化包
 `apt install iptables-persistent`
 
-过程中询问是否保存当前规则都选No。
+过程中询问是否保存当前规则，选两次No。
 
 
-新建`/etc/iptables/rules.v4`文件，写入如下内容，
+新建`/etc/iptables/rules.v4`文件，写入如下内容：
 
 ```
 *nat
