@@ -1,7 +1,7 @@
 # 重要！纯萌新小白慎入！~~现在关闭网页还来得及~~
 
 
-本文记录借鉴 [使用 RouterOS，OSPF 和树莓派为国内外 IP 智能分流](https://idndx.com/use-routeros0-and-raspberry-pi-to-create-split-routing-for-different-ip-ranges/)，稍作调整，直接通过隧道从vps接收路由。
+本文记录借鉴 [使用 RouterOS，OSPF 和树莓派为国内外 IP 智能分流](https://idndx.com/use-routeros-ospf-and-raspberry-pi-to-create-split-routing-for-different-ip-ranges/)，稍作调整，直接通过隧道从vps接收路由。
 
 关于DNS分流，详见[mosdns-cn](https://github.com/allanchen2019/mosdns-cn-debian-install)。
 
